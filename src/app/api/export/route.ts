@@ -62,6 +62,7 @@ export async function GET(req: NextRequest) {
 
         // Define Columns
         const columns: Array<{ header: string; key: string; width: number }> = [
+          { header: 'No.', key: 'rowNumber', width: 8 },
           { header: 'Respondent Type', key: 'respondentType', width: 18 },
           { header: 'Academic Program', key: 'academicProgram', width: 26 },
           { header: 'Year Level', key: 'yearLevel', width: 14 },
@@ -76,12 +77,6 @@ export async function GET(req: NextRequest) {
             key: q.itemId,
             width: 12,
           });
-        });
-
-        columns.push({
-          header: 'Comments / Remarks',
-          key: 'remarks',
-          width: 40,
         });
 
         worksheet.columns = columns;
@@ -120,13 +115,13 @@ export async function GET(req: NextRequest) {
           r.answers.forEach((a) => answerMap.set(a.itemId, a.rating));
 
           const rowData: Record<string, any> = {
+            rowNumber: index + 1,
             respondentType: r.respondentType,
             academicProgram: r.academicProgram,
             yearLevel: r.yearLevel,
             deviceUsed: r.deviceUsed,
             status: r.status,
             createdAt: r.createdAt.toISOString().slice(0, 10),
-            remarks: r.remarks || '',
           };
 
           questionList.forEach((q) => {
@@ -158,15 +153,15 @@ export async function GET(req: NextRequest) {
               right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
             };
 
-            // Alignment: Program & Remarks left-aligned, everything else centered
+            // Alignment: Program & Device left-aligned, everything else centered
             const colKey = columns[colNumber - 1]?.key;
-            if (colKey === 'academicProgram' || colKey === 'remarks' || colKey === 'deviceUsed') {
+            if (colKey === 'academicProgram' || colKey === 'deviceUsed') {
               cell.alignment = { vertical: 'middle', horizontal: 'left' };
             } else {
               cell.alignment = { vertical: 'middle', horizontal: 'center' };
             }
 
-            // Numeric format for integer ratings
+            // Numeric format for integer ratings and sequence number
             if (typeof cell.value === 'number') {
               cell.numFmt = '0';
             }
@@ -184,19 +179,19 @@ export async function GET(req: NextRequest) {
         });
       }
 
-      // Fallback CSV: Type, Program, Year, Device, Status, Remarks, CreatedAt, FUNC_1, FUNC_2, ..., EDUC_5
+      // Fallback CSV: No., Type, Program, Year, Device, Status, CreatedAt, FUNC_1, FUNC_2, ..., EDUC_5
       const headers = [
+        'No.',
         'Respondent Type',
         'Academic Program',
         'Year Level',
         'Device Used',
         'Status',
-        'Comments / Remarks',
         'Date Added',
         ...questionList.map((q) => `${q.itemId} (${q.criterion} ${q.itemNumber})`),
       ];
 
-      const rows = respondents.map((r) => {
+      const rows = respondents.map((r, index) => {
         const answerMap = new Map<string, number>();
         r.answers.forEach((a) => answerMap.set(a.itemId, a.rating));
 
@@ -206,12 +201,12 @@ export async function GET(req: NextRequest) {
         });
 
         return [
+          index + 1,
           r.respondentType,
           r.academicProgram,
           r.yearLevel,
           r.deviceUsed,
           r.status,
-          r.remarks || '',
           r.createdAt.toISOString(),
           ...itemScores,
         ]
