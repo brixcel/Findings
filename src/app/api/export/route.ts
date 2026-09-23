@@ -62,13 +62,11 @@ export async function GET(req: NextRequest) {
 
         // Define Columns
         const columns: Array<{ header: string; key: string; width: number }> = [
-          { header: 'Respondent ID', key: 'id', width: 18 },
           { header: 'Respondent Type', key: 'respondentType', width: 18 },
           { header: 'Academic Program', key: 'academicProgram', width: 26 },
           { header: 'Year Level', key: 'yearLevel', width: 14 },
           { header: 'Device Used', key: 'deviceUsed', width: 32 },
           { header: 'Status', key: 'status', width: 14 },
-          { header: 'Is Demo', key: 'isDemo', width: 12 },
           { header: 'Date Encoded', key: 'createdAt', width: 16 },
         ];
 
@@ -122,13 +120,11 @@ export async function GET(req: NextRequest) {
           r.answers.forEach((a) => answerMap.set(a.itemId, a.rating));
 
           const rowData: Record<string, any> = {
-            id: r.id,
             respondentType: r.respondentType,
             academicProgram: r.academicProgram,
             yearLevel: r.yearLevel,
             deviceUsed: r.deviceUsed,
             status: r.status,
-            isDemo: r.isDemo ? 'YES' : 'NO',
             createdAt: r.createdAt.toISOString().slice(0, 10),
             remarks: r.remarks || '',
           };
@@ -188,16 +184,14 @@ export async function GET(req: NextRequest) {
         });
       }
 
-      // Fallback CSV: ID, Type, Program, Year, Device, Status, Remarks, CreatedAt, FUNC_1, FUNC_2, ..., EDUC_5
+      // Fallback CSV: Type, Program, Year, Device, Status, Remarks, CreatedAt, FUNC_1, FUNC_2, ..., EDUC_5
       const headers = [
-        'Respondent ID',
         'Respondent Type',
         'Academic Program',
         'Year Level',
         'Device Used',
         'Status',
         'Comments / Remarks',
-        'Is Demo',
         'Date Added',
         ...questionList.map((q) => `${q.itemId} (${q.criterion} ${q.itemNumber})`),
       ];
@@ -212,14 +206,12 @@ export async function GET(req: NextRequest) {
         });
 
         return [
-          r.id,
           r.respondentType,
           r.academicProgram,
           r.yearLevel,
           r.deviceUsed,
           r.status,
           r.remarks || '',
-          r.isDemo ? 'YES' : 'NO',
           r.createdAt.toISOString(),
           ...itemScores,
         ]

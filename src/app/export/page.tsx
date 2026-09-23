@@ -81,10 +81,10 @@ export default function ExportPage() {
           <div>
             <div className="text-emerald-400 font-semibold mb-1">1. Demographics</div>
             <div className="text-slate-400 text-[11px] space-y-0.5">
-              <div>• Respondent ID</div>
               <div>• Type (Student / Expert)</div>
               <div>• Academic Program</div>
-              <div>• Year Level & Device</div>
+              <div>• Year Level</div>
+              <div>• Device Used & Date</div>
             </div>
           </div>
           <div>
