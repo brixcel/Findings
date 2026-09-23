@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Respondent {
+  id               String   @id
+  respondentType   String   // "STUDENT" | "EXPERT"
+  academicProgram  String
+  yearLevel        String
+  deviceUsed       String   // "Researcher-provided device" | "Own device / downloaded from website"
+  status           String   // "DRAFT" | "COMPLETED"
+  remarks          String?  // Qualitative feedback, suggestions, and recommendations
+  isDemo           Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  answers          Answer[]
+
+  @@index([respondentType])
+  @@index([status])
+  @@index([isDemo])
+  @@index([createdAt])
+}
+
+model Question {
+  itemId                   String   @id
+  criterion                String   // "Functionality" | "Reliability" | "Usability" | "Efficiency" | "Portability" | "Maintainability" | "Educational Effectiveness"
+  itemNumber               Int
+  questionText             String
+  applicableRespondentType String   // "STUDENT" | "EXPERT" | "ALL"
+  displayOrder             Int      @default(0)
+
+  answers                  Answer[]
+
+  @@index([criterion])
+  @@index([applicableRespondentType])
+}
+
+model Answer {
+  id           String     @id @default(cuid())
+  respondentId String
+  itemId       String
+  criterion    String
+  rating       Int        // 1 - 5
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  respondent   Respondent @relation(fields: [respondentId], references: [id], onDelete: Cascade)
+  question     Question   @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
+
+  @@unique([respondentId, itemId])
+  @@index([respondentId])
+  @@index([itemId])
+  @@index([criterion])
+  @@index([rating])
+}
