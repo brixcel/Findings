@@ -56,7 +56,7 @@ export default function Navigation() {
           </div>
           <div className="flex items-center space-x-2 text-xs text-slate-400">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>SQLite Connected</span>
+            <span>Database Connected</span>
           </div>
         </div>
 
