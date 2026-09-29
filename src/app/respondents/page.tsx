@@ -18,6 +18,7 @@ import {
   Loader2,
   RefreshCw,
   MessageSquare,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface RespondentRow {
@@ -123,6 +124,14 @@ export default function RespondentsPage() {
         </div>
 
         <div className="flex items-center space-x-2">
+          <Link
+            href="/export"
+            className="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-3 py-2 rounded-md transition-colors"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <span>Export Excel</span>
+          </Link>
+
           <Link
             href="/respondents/new"
             className="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-medium px-3.5 py-2 rounded-md shadow-xs transition-colors"

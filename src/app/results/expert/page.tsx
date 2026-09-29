@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   Briefcase,
   Download,
+  FileSpreadsheet,
   Loader2,
   AlertCircle,
   BarChart2,
@@ -74,10 +75,18 @@ export default function ExpertResultsPage() {
           </label>
 
           <a
-            href={`/api/export?type=statistics&includeDemo=${includeDemo}`}
-            className="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium px-3.5 py-2 rounded-md shadow-xs transition-colors"
+            href={`/api/export?type=raw&format=xlsx&respondentType=EXPERT&includeDemo=${includeDemo}`}
+            className="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-md shadow-xs transition-colors"
           >
-            <Download className="w-4 h-4" />
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Export Excel (.xlsx)</span>
+          </a>
+
+          <a
+            href={`/api/export?type=statistics&respondentType=EXPERT&includeDemo=${includeDemo}`}
+            className="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium px-3 py-2 rounded-md shadow-xs transition-colors"
+          >
+            <Download className="w-4 h-4 text-slate-300" />
             <span>Export CSV</span>
           </a>
         </div>
