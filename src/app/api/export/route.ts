@@ -33,20 +33,20 @@ function populateCodebookWorksheet(
   themeHeaderColor = 'FF1E293B'
 ) {
   worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
-  worksheet.properties.defaultRowHeight = 20;
+  worksheet.properties.defaultRowHeight = 22;
 
   const columns = [
     { header: 'Item ID', key: 'itemId', width: 14 },
-    { header: 'Criterion / Dimension', key: 'criterion', width: 26 },
-    { header: 'Item No.', key: 'itemNumber', width: 10 },
-    { header: 'Indicator / Questionnaire Statement', key: 'questionText', width: 75 },
-    { header: 'Target Population', key: 'targetGroup', width: 24 },
+    { header: 'Criterion / Dimension', key: 'criterion', width: 32 },
+    { header: 'Item No.', key: 'itemNumber', width: 12 },
+    { header: 'Indicator / Questionnaire Statement', key: 'questionText', width: 90 },
+    { header: 'Target Population', key: 'targetGroup', width: 32 },
   ];
 
   worksheet.columns = columns;
 
   const headerRow = worksheet.getRow(1);
-  headerRow.height = 28;
+  headerRow.height = 30;
   headerRow.eachCell((cell) => {
     cell.font = {
       name: 'Segoe UI',
@@ -87,7 +87,7 @@ function populateCodebookWorksheet(
       questionText: q.questionText,
       targetGroup,
     });
-    row.height = 24;
+    row.height = 26;
 
     const isEven = index % 2 === 0;
     const rowBg = isEven ? 'FFFFFFFF' : 'FFF8FAFC';
@@ -117,6 +117,18 @@ function populateCodebookWorksheet(
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
       }
     });
+  });
+
+  // Auto-fit non-statement columns
+  worksheet.columns.forEach((column) => {
+    if (column.key !== 'questionText') {
+      let maxLen = column.header ? String(column.header).length : 0;
+      column.eachCell?.({ includeEmpty: false }, (cell) => {
+        const val = cell.value ? String(cell.value) : '';
+        if (val.length > maxLen) maxLen = val.length;
+      });
+      column.width = Math.max(column.width || 14, maxLen + 5);
+    }
   });
 }
 
@@ -194,25 +206,25 @@ export async function GET(req: NextRequest) {
 
         const worksheet = workbook.addWorksheet('Raw Encoded Responses', {
           views: [{ state: 'frozen', xSplit: 0, ySplit: 1 }],
-          properties: { defaultRowHeight: 20 },
+          properties: { defaultRowHeight: 22 },
         });
 
-        // Define Columns (Respondent ID, Comments & Feedbacks omitted)
+        // Define Columns with generous widths (Respondent ID, Comments & Feedbacks omitted)
         const columns: Array<{ header: string; key: string; width: number }> = [
-          { header: 'No.', key: 'rowNumber', width: 8 },
-          { header: 'Respondent Type', key: 'respondentType', width: 22 },
-          { header: 'Academic Program', key: 'academicProgram', width: 26 },
-          { header: 'Year Level', key: 'yearLevel', width: 16 },
-          { header: 'Device Used', key: 'deviceUsed', width: 32 },
-          { header: 'Status', key: 'status', width: 14 },
-          { header: 'Date Encoded', key: 'createdAt', width: 16 },
+          { header: 'No.', key: 'rowNumber', width: 10 },
+          { header: 'Respondent Type', key: 'respondentType', width: 28 },
+          { header: 'Academic Program', key: 'academicProgram', width: 28 },
+          { header: 'Year Level', key: 'yearLevel', width: 28 },
+          { header: 'Device Used', key: 'deviceUsed', width: 50 },
+          { header: 'Status', key: 'status', width: 16 },
+          { header: 'Date Encoded', key: 'createdAt', width: 18 },
         ];
 
         questionsToExport.forEach((q) => {
           columns.push({
             header: q.itemId,
             key: q.itemId,
-            width: 12,
+            width: 14,
           });
         });
 
@@ -220,7 +232,7 @@ export async function GET(req: NextRequest) {
 
         // Style Header Row (Row 1)
         const headerRow = worksheet.getRow(1);
-        headerRow.height = 28;
+        headerRow.height = 30;
         headerRow.eachCell((cell) => {
           cell.font = {
             name: 'Segoe UI',
@@ -236,7 +248,7 @@ export async function GET(req: NextRequest) {
           cell.alignment = {
             vertical: 'middle',
             horizontal: 'center',
-            wrapText: true,
+            wrapText: false,
           };
           cell.border = {
             top: { style: 'thin', color: { argb: 'FF334155' } },
@@ -272,7 +284,7 @@ export async function GET(req: NextRequest) {
           });
 
           const row = worksheet.addRow(rowData);
-          row.height = 22;
+          row.height = 24;
 
           const isEven = index % 2 === 0;
           const rowBg = isEven ? 'FFFFFFFF' : 'FFF8FAFC'; // Clean alternating zebra striping
@@ -296,7 +308,7 @@ export async function GET(req: NextRequest) {
             };
 
             const colKey = columns[colNumber - 1]?.key;
-            if (colKey === 'academicProgram' || colKey === 'deviceUsed') {
+            if (colKey === 'academicProgram' || colKey === 'deviceUsed' || colKey === 'yearLevel') {
               cell.alignment = { vertical: 'middle', horizontal: 'left' };
             } else {
               cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -306,6 +318,19 @@ export async function GET(req: NextRequest) {
               cell.numFmt = '0';
             }
           });
+        });
+
+        // Dynamic auto-expand columns based on longest cell content + padding
+        worksheet.columns.forEach((column) => {
+          let maxLen = column.header ? String(column.header).length : 0;
+          column.eachCell?.({ includeEmpty: false }, (cell) => {
+            const cellVal = cell.value !== undefined && cell.value !== null ? String(cell.value) : '';
+            if (cellVal.length > maxLen) {
+              maxLen = cellVal.length;
+            }
+          });
+          const calculatedWidth = maxLen + 6;
+          column.width = Math.max(column.width || 12, calculatedWidth);
         });
 
         // Tab 2: Questionnaire Codebook
