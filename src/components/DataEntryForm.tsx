@@ -312,8 +312,7 @@ export default function DataEntryForm({ initialData, isEdit = false }: DataEntry
             <select
               value={respondentType}
               onChange={(e) => setRespondentType(e.target.value as 'STUDENT' | 'EXPERT')}
-              disabled={isEdit}
-              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:opacity-60 font-semibold text-slate-800"
+              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-sky-500 font-semibold text-slate-800"
             >
               <option value="STUDENT">Student / End-User (30 Qs)</option>
               <option value="EXPERT">Instructor / Subject Expert (30 Qs)</option>

@@ -32,6 +32,7 @@ export async function PUT(
   try {
     const body = await req.json();
     const {
+      respondentType,
       academicProgram,
       yearLevel,
       deviceUsed,
@@ -49,7 +50,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Respondent not found' }, { status: 404 });
     }
 
-    const applicableQuestions = getApplicableQuestions(existing.respondentType as 'STUDENT' | 'EXPERT');
+    const targetType = (respondentType || existing.respondentType) as 'STUDENT' | 'EXPERT';
+    const applicableQuestions = getApplicableQuestions(targetType);
     const requiredItemIds = applicableQuestions.map((q) => q.itemId);
 
     if (status === 'COMPLETED') {
@@ -99,6 +101,7 @@ export async function PUT(
       await tx.respondent.update({
         where: { id: params.id },
         data: {
+          respondentType: targetType,
           academicProgram: academicProgram ?? existing.academicProgram,
           yearLevel: yearLevel ?? existing.yearLevel,
           deviceUsed: deviceUsed ?? existing.deviceUsed,
