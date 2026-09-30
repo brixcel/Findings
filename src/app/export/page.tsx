@@ -122,7 +122,7 @@ export default function ExportPage() {
               <div>• Sequential No. (1, 2, 3...)</div>
               <div>• Role (Expert / Instructor & Student / End-User)</div>
               <div>• Academic Program & Year Level</div>
-              <div>• Device Used & Date Encoded</div>
+              <div>• Device Used</div>
             </div>
           </div>
           <div>

@@ -209,15 +209,13 @@ export async function GET(req: NextRequest) {
           properties: { defaultRowHeight: 22 },
         });
 
-        // Define Columns with generous widths (Respondent ID, Comments & Feedbacks omitted)
+        // Define Columns with generous widths (Respondent ID, Date Encoded, Status, Comments & Feedbacks omitted)
         const columns: Array<{ header: string; key: string; width: number }> = [
           { header: 'No.', key: 'rowNumber', width: 10 },
           { header: 'Respondent Type', key: 'respondentType', width: 28 },
           { header: 'Academic Program', key: 'academicProgram', width: 28 },
           { header: 'Year Level', key: 'yearLevel', width: 28 },
           { header: 'Device Used', key: 'deviceUsed', width: 50 },
-          { header: 'Status', key: 'status', width: 16 },
-          { header: 'Date Encoded', key: 'createdAt', width: 18 },
         ];
 
         questionsToExport.forEach((q) => {
@@ -263,19 +261,12 @@ export async function GET(req: NextRequest) {
           const answerMap = new Map<string, number>();
           r.answers?.forEach((a: any) => answerMap.set(a.itemId, a.rating));
 
-          const dateVal =
-            r.createdAt instanceof Date
-              ? r.createdAt.toISOString().slice(0, 10)
-              : String(r.createdAt).slice(0, 10);
-
           const rowData: Record<string, any> = {
             rowNumber: index + 1,
             respondentType: formatRespondentType(r.respondentType),
             academicProgram: r.academicProgram,
             yearLevel: r.yearLevel,
             deviceUsed: r.deviceUsed,
-            status: r.status,
-            createdAt: dateVal,
           };
 
           questionsToExport.forEach((q) => {
@@ -362,8 +353,6 @@ export async function GET(req: NextRequest) {
         'Academic Program',
         'Year Level',
         'Device Used',
-        'Status',
-        'Date Encoded',
         ...questionsToExport.map((q) => `${q.itemId} (${q.criterion} ${q.itemNumber})`),
       ];
 
@@ -376,19 +365,12 @@ export async function GET(req: NextRequest) {
           return val !== undefined ? String(val) : 'N/A';
         });
 
-        const dateStr =
-          r.createdAt instanceof Date
-            ? r.createdAt.toISOString().slice(0, 10)
-            : String(r.createdAt).slice(0, 10);
-
         return [
           index + 1,
           formatRespondentType(r.respondentType),
           r.academicProgram,
           r.yearLevel,
           r.deviceUsed,
-          r.status,
-          dateStr,
           ...itemScores,
         ]
           .map(escapeCsv)
