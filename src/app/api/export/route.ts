@@ -21,140 +21,10 @@ function escapeCsv(val: any): string {
 
 export const dynamic = 'force-dynamic';
 
-interface PopulateWorksheetOptions {
-  worksheet: ExcelJS.Worksheet;
-  respondents: any[];
-  questions: any[];
-  themeHeaderColor?: string;
-}
-
-function populateResponseWorksheet({
-  worksheet,
-  respondents,
-  questions,
-  themeHeaderColor = 'FF1E293B',
-}: PopulateWorksheetOptions) {
-  worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
-  worksheet.properties.defaultRowHeight = 20;
-
-  const columns: Array<{ header: string; key: string; width: number }> = [
-    { header: 'No.', key: 'rowNumber', width: 8 },
-    { header: 'Respondent ID', key: 'id', width: 18 },
-    { header: 'Respondent Type', key: 'respondentType', width: 18 },
-    { header: 'Academic Program', key: 'academicProgram', width: 26 },
-    { header: 'Year Level / Designation', key: 'yearLevel', width: 22 },
-    { header: 'Device Used', key: 'deviceUsed', width: 32 },
-    { header: 'Status', key: 'status', width: 14 },
-    { header: 'Date Encoded', key: 'createdAt', width: 16 },
-  ];
-
-  questions.forEach((q) => {
-    columns.push({
-      header: q.itemId,
-      key: q.itemId,
-      width: 12,
-    });
-  });
-
-  columns.push({
-    header: 'Remarks / Feedback',
-    key: 'remarks',
-    width: 38,
-  });
-
-  worksheet.columns = columns;
-
-  // Style Header Row (Row 1)
-  const headerRow = worksheet.getRow(1);
-  headerRow.height = 28;
-  headerRow.eachCell((cell) => {
-    cell.font = {
-      name: 'Segoe UI',
-      size: 11,
-      bold: true,
-      color: { argb: 'FFFFFFFF' },
-    };
-    cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: themeHeaderColor },
-    };
-    cell.alignment = {
-      vertical: 'middle',
-      horizontal: 'center',
-      wrapText: true,
-    };
-    cell.border = {
-      top: { style: 'thin', color: { argb: 'FF334155' } },
-      left: { style: 'thin', color: { argb: 'FF334155' } },
-      bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
-      right: { style: 'thin', color: { argb: 'FF334155' } },
-    };
-  });
-
-  // Add Data Rows
-  respondents.forEach((r, index) => {
-    const answerMap = new Map<string, number>();
-    r.answers?.forEach((a: any) => answerMap.set(a.itemId, a.rating));
-
-    const dateVal =
-      r.createdAt instanceof Date
-        ? r.createdAt.toISOString().slice(0, 10)
-        : String(r.createdAt).slice(0, 10);
-
-    const rowData: Record<string, any> = {
-      rowNumber: index + 1,
-      id: r.id,
-      respondentType: r.respondentType,
-      academicProgram: r.academicProgram,
-      yearLevel: r.yearLevel,
-      deviceUsed: r.deviceUsed,
-      status: r.status,
-      createdAt: dateVal,
-      remarks: r.remarks || '',
-    };
-
-    questions.forEach((q) => {
-      const val = answerMap.get(q.itemId);
-      rowData[q.itemId] = val !== undefined ? val : 'N/A';
-    });
-
-    const row = worksheet.addRow(rowData);
-    row.height = 22;
-
-    const isEven = index % 2 === 0;
-    const rowBg = isEven ? 'FFFFFFFF' : 'FFF8FAFC'; // Clean alternating zebra striping
-
-    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-      cell.font = {
-        name: 'Segoe UI',
-        size: 10,
-        color: { argb: 'FF0F172A' },
-      };
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: rowBg },
-      };
-      cell.border = {
-        top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-        bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-        right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-      };
-
-      const colKey = columns[colNumber - 1]?.key;
-      if (colKey === 'academicProgram' || colKey === 'deviceUsed' || colKey === 'remarks') {
-        cell.alignment = { vertical: 'middle', horizontal: 'left' };
-      } else {
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      }
-
-      if (typeof cell.value === 'number') {
-        cell.numFmt = '0';
-      }
-    });
-  });
+function formatRespondentType(type: string): string {
+  if (type === 'EXPERT') return 'Expert / Instructor';
+  if (type === 'STUDENT') return 'Student / End-User';
+  return type;
 }
 
 function populateCodebookWorksheet(
@@ -170,7 +40,7 @@ function populateCodebookWorksheet(
     { header: 'Criterion / Dimension', key: 'criterion', width: 26 },
     { header: 'Item No.', key: 'itemNumber', width: 10 },
     { header: 'Indicator / Questionnaire Statement', key: 'questionText', width: 75 },
-    { header: 'Target Population', key: 'targetGroup', width: 22 },
+    { header: 'Target Population', key: 'targetGroup', width: 24 },
   ];
 
   worksheet.columns = columns;
@@ -207,8 +77,8 @@ function populateCodebookWorksheet(
       q.applicableRespondentType === 'ALL'
         ? 'Both (Students & Experts)'
         : q.applicableRespondentType === 'EXPERT'
-        ? 'Experts Only'
-        : 'Students Only';
+        ? 'Experts / Instructors Only'
+        : 'Students / End-Users Only';
 
     const row = worksheet.addRow({
       itemId: q.itemId,
@@ -250,51 +120,6 @@ function populateCodebookWorksheet(
   });
 }
 
-function buildCsvContent(respondents: any[], questions: any[]) {
-  const headers = [
-    'No.',
-    'Respondent ID',
-    'Respondent Type',
-    'Academic Program',
-    'Year Level',
-    'Device Used',
-    'Status',
-    'Date Encoded',
-    ...questions.map((q) => `${q.itemId} (${q.criterion} ${q.itemNumber})`),
-    'Remarks',
-  ];
-
-  const rows = respondents.map((r, index) => {
-    const answerMap = new Map<string, number>();
-    r.answers?.forEach((a: any) => answerMap.set(a.itemId, a.rating));
-
-    const itemScores = questions.map((q) => {
-      const val = answerMap.get(q.itemId);
-      return val !== undefined ? String(val) : 'N/A';
-    });
-
-    const dateStr =
-      r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt);
-
-    return [
-      index + 1,
-      r.id,
-      r.respondentType,
-      r.academicProgram,
-      r.yearLevel,
-      r.deviceUsed,
-      r.status,
-      dateStr,
-      ...itemScores,
-      r.remarks || '',
-    ]
-      .map(escapeCsv)
-      .join(',');
-  });
-
-  return [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
-}
-
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -302,7 +127,6 @@ export async function GET(req: NextRequest) {
     const format = searchParams.get('format') || (type === 'raw' ? 'xlsx' : 'csv'); // 'xlsx' | 'csv'
     const includeDemo = searchParams.get('includeDemo') === 'true';
 
-    // Respondent group separation parameter: 'STUDENT' | 'EXPERT' | 'ALL'
     const respondentTypeParam = (
       searchParams.get('respondentType') ||
       searchParams.get('group') ||
@@ -327,22 +151,35 @@ export async function GET(req: NextRequest) {
 
     const respondents = await prisma.respondent.findMany({
       where,
-      orderBy: [{ respondentType: 'asc' }, { id: 'asc' }],
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       include: { answers: true },
     });
+
+    // Group all Experts together first, followed by all Students
+    const expertRespondents = respondents.filter((r) => r.respondentType === 'EXPERT');
+    const studentRespondents = respondents.filter((r) => r.respondentType === 'STUDENT');
+    const orderedRespondents =
+      targetGroup === 'STUDENT'
+        ? studentRespondents
+        : targetGroup === 'EXPERT'
+        ? expertRespondents
+        : [...expertRespondents, ...studentRespondents];
 
     const dbQuestions = await prisma.question.findMany({
       orderBy: { displayOrder: 'asc' },
     });
     const allQuestions = dbQuestions.length > 0 ? dbQuestions : DEFAULT_QUESTIONS;
 
-    // Filter indicators tailored to respective respondent groups
-    const studentQuestions = allQuestions.filter(
-      (q) => q.applicableRespondentType === 'ALL' || q.applicableRespondentType === 'STUDENT'
-    );
-    const expertQuestions = allQuestions.filter(
-      (q) => q.applicableRespondentType === 'ALL' || q.applicableRespondentType === 'EXPERT'
-    );
+    const questionsToExport =
+      targetGroup === 'STUDENT'
+        ? allQuestions.filter(
+            (q) => q.applicableRespondentType === 'ALL' || q.applicableRespondentType === 'STUDENT'
+          )
+        : targetGroup === 'EXPERT'
+        ? allQuestions.filter(
+            (q) => q.applicableRespondentType === 'ALL' || q.applicableRespondentType === 'EXPERT'
+          )
+        : allQuestions;
 
     const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -355,78 +192,134 @@ export async function GET(req: NextRequest) {
         workbook.created = new Date();
         workbook.modified = new Date();
 
-        let filename = `AR-DUINO-M_Raw_Data_${todayStr}.xlsx`;
+        const worksheet = workbook.addWorksheet('Raw Encoded Responses', {
+          views: [{ state: 'frozen', xSplit: 0, ySplit: 1 }],
+          properties: { defaultRowHeight: 20 },
+        });
 
-        if (targetGroup === 'EXPERT') {
-          filename = `AR-DUINO-M_Expert_Responses_${todayStr}.xlsx`;
+        // Define Columns (Respondent ID, Comments & Feedbacks omitted)
+        const columns: Array<{ header: string; key: string; width: number }> = [
+          { header: 'No.', key: 'rowNumber', width: 8 },
+          { header: 'Respondent Type', key: 'respondentType', width: 22 },
+          { header: 'Academic Program', key: 'academicProgram', width: 26 },
+          { header: 'Year Level', key: 'yearLevel', width: 16 },
+          { header: 'Device Used', key: 'deviceUsed', width: 32 },
+          { header: 'Status', key: 'status', width: 14 },
+          { header: 'Date Encoded', key: 'createdAt', width: 16 },
+        ];
 
-          // Sheet 1: Dedicated Expert Responses with 30 Expert Indicators (excludes EDUC)
-          const expertSheet = workbook.addWorksheet('Expert Responses');
-          populateResponseWorksheet({
-            worksheet: expertSheet,
-            respondents,
-            questions: expertQuestions,
-            themeHeaderColor: 'FF1E1B4B', // Deep indigo navy
+        questionsToExport.forEach((q) => {
+          columns.push({
+            header: q.itemId,
+            key: q.itemId,
+            width: 12,
+          });
+        });
+
+        worksheet.columns = columns;
+
+        // Style Header Row (Row 1)
+        const headerRow = worksheet.getRow(1);
+        headerRow.height = 28;
+        headerRow.eachCell((cell) => {
+          cell.font = {
+            name: 'Segoe UI',
+            size: 11,
+            bold: true,
+            color: { argb: 'FFFFFFFF' },
+          };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF1E293B' }, // Dark slate navy
+          };
+          cell.alignment = {
+            vertical: 'middle',
+            horizontal: 'center',
+            wrapText: true,
+          };
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FF334155' } },
+            left: { style: 'thin', color: { argb: 'FF334155' } },
+            bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
+            right: { style: 'thin', color: { argb: 'FF334155' } },
+          };
+        });
+
+        // Add Data Rows: All Experts grouped together first, then all Students
+        orderedRespondents.forEach((r, index) => {
+          const answerMap = new Map<string, number>();
+          r.answers?.forEach((a: any) => answerMap.set(a.itemId, a.rating));
+
+          const dateVal =
+            r.createdAt instanceof Date
+              ? r.createdAt.toISOString().slice(0, 10)
+              : String(r.createdAt).slice(0, 10);
+
+          const rowData: Record<string, any> = {
+            rowNumber: index + 1,
+            respondentType: formatRespondentType(r.respondentType),
+            academicProgram: r.academicProgram,
+            yearLevel: r.yearLevel,
+            deviceUsed: r.deviceUsed,
+            status: r.status,
+            createdAt: dateVal,
+          };
+
+          questionsToExport.forEach((q) => {
+            const val = answerMap.get(q.itemId);
+            rowData[q.itemId] = val !== undefined ? val : 'N/A';
           });
 
-          // Sheet 2: Questionnaire Codebook
-          const codebookSheet = workbook.addWorksheet('Questionnaire Codebook');
-          populateCodebookWorksheet(codebookSheet, expertQuestions, 'FF1E293B');
-        } else if (targetGroup === 'STUDENT') {
-          filename = `AR-DUINO-M_Student_Responses_${todayStr}.xlsx`;
+          const row = worksheet.addRow(rowData);
+          row.height = 22;
 
-          // Sheet 1: Dedicated Student Responses with 30 Student Indicators (excludes MAINT)
-          const studentSheet = workbook.addWorksheet('Student Responses');
-          populateResponseWorksheet({
-            worksheet: studentSheet,
-            respondents,
-            questions: studentQuestions,
-            themeHeaderColor: 'FF064E3B', // Rich emerald slate
+          const isEven = index % 2 === 0;
+          const rowBg = isEven ? 'FFFFFFFF' : 'FFF8FAFC'; // Clean alternating zebra striping
+
+          row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            cell.font = {
+              name: 'Segoe UI',
+              size: 10,
+              color: { argb: 'FF0F172A' },
+            };
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: rowBg },
+            };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            };
+
+            const colKey = columns[colNumber - 1]?.key;
+            if (colKey === 'academicProgram' || colKey === 'deviceUsed') {
+              cell.alignment = { vertical: 'middle', horizontal: 'left' };
+            } else {
+              cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            }
+
+            if (typeof cell.value === 'number') {
+              cell.numFmt = '0';
+            }
           });
+        });
 
-          // Sheet 2: Questionnaire Codebook
-          const codebookSheet = workbook.addWorksheet('Questionnaire Codebook');
-          populateCodebookWorksheet(codebookSheet, studentQuestions, 'FF1E293B');
-        } else {
-          // Master / Combined Export: Provide cleanly separated sheets for both groups
-          filename = `AR-DUINO-M_Master_Research_Dataset_${todayStr}.xlsx`;
-
-          const studentRespondents = respondents.filter((r) => r.respondentType === 'STUDENT');
-          const expertRespondents = respondents.filter((r) => r.respondentType === 'EXPERT');
-
-          // Sheet 1: Student Responses (30 items)
-          const studentSheet = workbook.addWorksheet('Student Responses');
-          populateResponseWorksheet({
-            worksheet: studentSheet,
-            respondents: studentRespondents,
-            questions: studentQuestions,
-            themeHeaderColor: 'FF064E3B',
-          });
-
-          // Sheet 2: Expert Responses (30 items)
-          const expertSheet = workbook.addWorksheet('Expert Responses');
-          populateResponseWorksheet({
-            worksheet: expertSheet,
-            respondents: expertRespondents,
-            questions: expertQuestions,
-            themeHeaderColor: 'FF1E1B4B',
-          });
-
-          // Sheet 3: Combined Raw Matrix (All 35 items)
-          const combinedSheet = workbook.addWorksheet('Combined All Responses');
-          populateResponseWorksheet({
-            worksheet: combinedSheet,
-            respondents,
-            questions: allQuestions,
-            themeHeaderColor: 'FF0F172A',
-          });
-
-          // Sheet 4: Complete Questionnaire Codebook
-          const codebookSheet = workbook.addWorksheet('Questionnaire Codebook');
-          populateCodebookWorksheet(codebookSheet, allQuestions, 'FF1E293B');
-        }
+        // Tab 2: Questionnaire Codebook
+        const codebookSheet = workbook.addWorksheet('Questionnaire Codebook');
+        populateCodebookWorksheet(codebookSheet, questionsToExport, 'FF1E293B');
 
         const buffer = await workbook.xlsx.writeBuffer();
+
+        const filename =
+          targetGroup === 'EXPERT'
+            ? `AR-DUINO-M_Expert_Responses_${todayStr}.xlsx`
+            : targetGroup === 'STUDENT'
+            ? `AR-DUINO-M_Student_Responses_${todayStr}.xlsx`
+            : `AR-DUINO-M_Raw_Data_for_Statistician_${todayStr}.xlsx`;
 
         return new NextResponse(buffer, {
           headers: {
@@ -437,19 +330,54 @@ export async function GET(req: NextRequest) {
         });
       }
 
-      // Handle CSV Export
-      let activeQuestions = allQuestions;
-      let csvFilename = `AR-DUINO-M_All_Responses_${todayStr}.csv`;
+      // Handle Fallback CSV Export
+      const headers = [
+        'No.',
+        'Respondent Type',
+        'Academic Program',
+        'Year Level',
+        'Device Used',
+        'Status',
+        'Date Encoded',
+        ...questionsToExport.map((q) => `${q.itemId} (${q.criterion} ${q.itemNumber})`),
+      ];
 
-      if (targetGroup === 'EXPERT') {
-        activeQuestions = expertQuestions;
-        csvFilename = `AR-DUINO-M_Expert_Responses_${todayStr}.csv`;
-      } else if (targetGroup === 'STUDENT') {
-        activeQuestions = studentQuestions;
-        csvFilename = `AR-DUINO-M_Student_Responses_${todayStr}.csv`;
-      }
+      const rows = orderedRespondents.map((r, index) => {
+        const answerMap = new Map<string, number>();
+        r.answers?.forEach((a: any) => answerMap.set(a.itemId, a.rating));
 
-      const csvContent = buildCsvContent(respondents, activeQuestions);
+        const itemScores = questionsToExport.map((q) => {
+          const val = answerMap.get(q.itemId);
+          return val !== undefined ? String(val) : 'N/A';
+        });
+
+        const dateStr =
+          r.createdAt instanceof Date
+            ? r.createdAt.toISOString().slice(0, 10)
+            : String(r.createdAt).slice(0, 10);
+
+        return [
+          index + 1,
+          formatRespondentType(r.respondentType),
+          r.academicProgram,
+          r.yearLevel,
+          r.deviceUsed,
+          r.status,
+          dateStr,
+          ...itemScores,
+        ]
+          .map(escapeCsv)
+          .join(',');
+      });
+
+      const csvContent = [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+
+      const csvFilename =
+        targetGroup === 'EXPERT'
+          ? `AR-DUINO-M_Expert_Responses_${todayStr}.csv`
+          : targetGroup === 'STUDENT'
+          ? `AR-DUINO-M_Student_Responses_${todayStr}.csv`
+          : `AR-DUINO-M_Raw_Responses_${todayStr}.csv`;
 
       return new NextResponse(csvContent, {
         headers: {
@@ -458,7 +386,7 @@ export async function GET(req: NextRequest) {
         },
       });
     } else if (type === 'statistics') {
-      // Statistical breakdown
+      // Statistical Breakdown CSV
       const headers = [
         'Respondent Group',
         'Criterion',
@@ -477,7 +405,7 @@ export async function GET(req: NextRequest) {
           ? ['STUDENT']
           : targetGroup === 'EXPERT'
           ? ['EXPERT']
-          : ['STUDENT', 'EXPERT'];
+          : ['EXPERT', 'STUDENT'];
 
       for (const grp of groups) {
         const grpRespondents = respondents.filter((r) => r.respondentType === grp);
@@ -498,7 +426,7 @@ export async function GET(req: NextRequest) {
 
             rows.push(
               [
-                grp,
+                formatRespondentType(grp),
                 criterion,
                 q.itemNumber,
                 q.itemId,
@@ -530,7 +458,7 @@ export async function GET(req: NextRequest) {
 
           rows.push(
             [
-              grp,
+              formatRespondentType(grp),
               criterion,
               'OVERALL CRITERION',
               '-',
@@ -546,12 +474,12 @@ export async function GET(req: NextRequest) {
 
       const csvContent = [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
 
-      let statFilename = `AR-DUINO-M_Statistical_Results_${todayStr}.csv`;
-      if (targetGroup === 'EXPERT') {
-        statFilename = `AR-DUINO-M_Expert_Statistical_Results_${todayStr}.csv`;
-      } else if (targetGroup === 'STUDENT') {
-        statFilename = `AR-DUINO-M_Student_Statistical_Results_${todayStr}.csv`;
-      }
+      const statFilename =
+        targetGroup === 'EXPERT'
+          ? `AR-DUINO-M_Expert_Statistical_Results_${todayStr}.csv`
+          : targetGroup === 'STUDENT'
+          ? `AR-DUINO-M_Student_Statistical_Results_${todayStr}.csv`
+          : `AR-DUINO-M_Statistical_Results_${todayStr}.csv`;
 
       return new NextResponse(csvContent, {
         headers: {
